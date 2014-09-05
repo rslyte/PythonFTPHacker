@@ -1,0 +1,28 @@
+Ryan Slyter
+CS 455
+Programming Assignment 1
+Report
+
+	For this assignment we were to write a python script that connects to an FTP server and 'brute force' attacks it by looking at a local file, rockyou_light.txt, and trying each password, reconnecting to the to port (which needed to be discovered) whenever the server kicked you off. The username was given. Once inside the FTP server, we were to use the correct protocal commands (asynchronous chat) to get to contents of the main directory, looking for a file with the words 'cs455' and 'programming' in it. Finally, we were to download the contents locally from the server and disconnect the socket.
+
+Contents of the target file (cs455_programming_1.txt):
+
+Congratulations! Your mission for programming homework 1 is completed. 
+
+Bye!
+
+PHASE I
+
+For this phase I simply made a while loop that incremented within the bounds of the proper ports [1, 65k(ish)] until the correct port is found. This is done by connecting and receiving a greeting message from the server. A simple check if 'FTP' is in the response confirms the port number.
+
+PHASE II
+
+      For this phase, I used the standard python functionality of opening the text file 'rockyou_light.txt' and reading it line by line, since we know each line has a password. NOTE: the initial password 'november11' I moved up 3-4 lines from the top of the file so I wouldn't have to wait an hour to find it (as I'm sure most everyone else did). By the time you test the code that password will have changed anyways, and the program is designed to run through the whole file until it finds the correct password or there is nothing left to read, in which case it will tell that to the user and gracefully exit. I imported the 'sys' module to handle that. After a password is tried and failed, I remake the socket and connect to the server so that it cannot kick me off the connection after 2-3 attempts (I had heard it was 3 and 2 from different people, so I programmed against that obscurity). This obviously makes it slower, but the program is supposed to take about an hour to find the correct password if it's at the bottom of the list anyways. Once the correct password is tried and accepted by the server, I close the rockyou_light file and move on to phase 3. Note that my code for this part is uglier than the other parts, I figured there wasn't much that could be done about this since you are checking for all kinds of inconsistent responses and outcomes, and also because that part of the code wasn't reusable in another part of the program.
+
+PHASE III
+
+      For this phase, I made 3 helper functions which make and connect a socket, send the PASV msg and calculate and return the port given by the passive server resopnse, and finally get data from the server from a temporary 'data' socket. This part is pretty straightforward once the actual steps in the conversation are done in the right order: you need to send the PASV, calculate the data port and connect with a different socket, send the LIST/RETR <filename> command, get the data, and close the data connection and read the final response that the data was properly sent. Note at the top of my program that I import the python regular expression module (re) and compile two regex modules (or at least that's what I think they turn out to be once they are compiled). The first is to find the last two integers from the passive response from the server to connect the data socket, and the second one is simply to find a textfile name from a unix directory listing. When you run the search methods from these modules, they return what's called a MatchObject in python that has methods group() and findall() that actually parse out the strings that you need. For the port numbers, you can then easily caste those to ints or with the second regex it automatically converts them to strings. I use the second regex to find all of the textfile names and put them into an array, which from there you can easily traverse the names and test for them having 'cs455' and 'programming' in them. From there you simply concatenate the filename into a string with the RETR command and call the 3 helper functions I made to retrieve file data and write it to a newly created file.
+
+OPINION ON WHETHER FTP SHOULD USE A SEPARATE CONNECTION FOR DATA AND CONTROL
+
+	In my opinion, the protocol is fairly simple and the act of creating and connecting sockets can be done in reusable function calls, so I see no problem in having 2 separate connections for control and for data. I decided not to do it for this assignment, but you could then have your data connection running on a separate thread which may make the data transfer faster. This is especially useful for stuff like server transfer where you're in a situation of having to move a lot of data. However, if you're moving very small amounts of data, say you've made a distributed game where game information can be stored as bits in a small byte sequence, it'd be much faster to just have the data transfer on the same connection.
